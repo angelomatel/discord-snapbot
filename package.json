@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "cron": "^4.3.0",
+    "discord.js": "^14.19.3",
+    "eris": "^0.15.1",
+    "websocket": "^1.0.35",
+    "winston": "^3.17.0"
+  }
+}

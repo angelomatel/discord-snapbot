@@ -1,0 +1,9 @@
+.env
+/node_modules
+/logs
+package-lock.json
+tempCodeRunnerFile.javascript
+tempCodeRunnerFile.js
+test.js
+update_items.js
+/db

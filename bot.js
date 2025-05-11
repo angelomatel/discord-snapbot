@@ -94,6 +94,16 @@ snapper.on('item', async (item) => {
         `https://borf.github.io/romicons/Items/${itemObject.Icon}.png`;
     item['ImageUrl'] = imageUrl;
 
+    // Check if the item has already been sent
+    const existingMessage = db.prepare(`
+        SELECT messages.id
+        FROM messages
+        JOIN channels ON messages.channel_id = channels.id
+        WHERE messages.order_id = ? AND channels.type = ?
+    `).get(item.Orderid, category);
+
+    if (existingMessage) return;
+
     Logger.item(item, fourthEnchant);
     
     const channels = db.prepare(`

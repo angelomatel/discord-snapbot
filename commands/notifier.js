@@ -180,6 +180,43 @@ module.exports = {
 
                 break;
             case 'remove':
+                const query = db.prepare(`
+                    SELECT *
+                    FROM notifier
+                    WHERE id = ? AND user_id = ?
+                `).get(notifierId, interaction.user.id)
+
+                if (!query) {
+                    return interaction.reply({
+                        content: `Notifier ID \`${notifierId}\` under your profile not found.`,
+                        flags: MessageFlags.Ephemeral
+                    });
+                } else {
+                    db.prepare(`
+                        DELETE FROM notifier
+                        WHERE id = ?
+                    `).run(notifierId);
+
+                    const item = ITEMS[query.item_id];
+                    let imageUrl = (item.Type >= 81 && item.Type <= 87) ?
+                        `https://borf.github.io/romicons/Cards/${item.Id}.png` :
+                        `https://borf.github.io/romicons/Items/${item.Icon}.png`;
+
+                    const removeEmbed = new EmbedBuilder()
+                        .setColor('#0099ff')
+                        .setTitle('Item Removed from Notifier')
+                        .setDescription(`You have removed **${item.Name}** from your notifier list.`)
+                        .setThumbnail(imageUrl)
+                        .addFields(
+                            { name: 'Refine Level', value: `${(query.refine > 0) ? query.refine : 'Any'}`, inline: true },
+                            { name: 'Enchant', value: `${query.enchant}`, inline: true },
+                            { name: 'Enchant Level', value: `${(query.enchant === 'None') ? query.enchant_level : 'N/A'}`, inline: true }
+                        )
+                        .setTimestamp();
+
+                    Logger.info(`User ${interaction.user.displayName} (${interaction.user.id}) removed item ${item.Name} (${item.Id}) from notifier list.`);
+                    await interaction.reply({ embeds: [removeEmbed], flags: MessageFlags.Ephemeral });
+                }
                 
                 break;
             case 'list':

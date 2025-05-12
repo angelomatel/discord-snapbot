@@ -21,6 +21,13 @@ const MessageUpdater = require('./helpers/MessageUpdater');
 const ITEMS = require('./files/items.json');
 
 const BOT = new Client({
+    presence: {
+        activities: [
+            { name: 'the exchange', type: 3 },
+            { name: 'with your zeny', type: 0 },
+        ],
+        status: 'online',
+    },
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,

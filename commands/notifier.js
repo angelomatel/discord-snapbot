@@ -7,8 +7,7 @@ const db = require('../helpers/db');
 const Logger = require('../helpers/Logger');
 
 function findItem(itemName) {
-    itemName = itemName.replace('\'', '’');
-    const item = Object.values(ITEMS).find(item => item.Name.toLowerCase() === itemName.toLowerCase());
+    const item = Object.values(ITEMS).find(item => item.Name.replace('’', '\'').toLowerCase() === itemName.toLowerCase());
     if (item) {
         return item;
     } else {
@@ -155,9 +154,9 @@ module.exports = {
 
                 db.prepare(`
                     INSERT INTO notifier
-                    (user_id, item_id, refine, enchant, enchant_level)
-                    VALUES (?, ?, ?, ?, ?)
-                `).run(interaction.user.id, item.Id, refineLevel, enchant, enchantLevel);
+                    (user_id, guild_id, item_id, refine, enchant, enchant_level)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `).run(interaction.user.id, interaction.guild.id, item.Id, refineLevel, enchant, enchantLevel);
 
                 let imageUrl = (item.Type >= 81 && item.Type <= 87) ?
                     `https://borf.github.io/romicons/Cards/${item.Id}.png` :

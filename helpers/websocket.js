@@ -30,6 +30,11 @@ wsClient.on('connect', (connection) => {
 
         data.Data.Result.Data.forEach((item) => {
             if (item.EndTime) {
+                if (item.Enchants) {
+                    if (item.Enchants[3].Enchant.endsWith('_')) // Get around the game's extra enchantment
+                        item.Enchants[3].Enchant = item.Enchants[3].Enchant.replace(/_/g, '');
+                }
+
                 item = { ItemId: item_id, ...item }
                 eventEmitter.emit('item', item);
             }

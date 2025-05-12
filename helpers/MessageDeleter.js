@@ -8,7 +8,8 @@ module.exports = {
             db.prepare(`
                 SELECT *
                 FROM messages
-                WHERE unixepoch() > expiry`)
+                WHERE unixepoch() > expiry
+                LIMIT 800`)
                 .all().forEach((message) => {
                     setTimeout(() => {
                         BOT.channels.fetch(message.channel_id).then((channel) => {
@@ -17,9 +18,15 @@ module.exports = {
                                 DELETE FROM messages
                                 WHERE id = ?
                                 `).run(message.id);
-                                msg.delete();
+                                msg.delete()
+                                    // .then(() => {
+                                    //     Logger.info(`Deleted message ${message.id} from channel ${message.channel_id}`);
+                                    // })
+                                    .catch((err) => {
+                                        Logger.error(`Error deleting message ${message.id}: ${err}`);
+                                    });
                             }).catch((err) => {
-                                Logger.error(`Error deleting message ${message.id}: ${err}`);
+                                Logger.error(`Message ${message.id} not found: ${err}`);
                             });
                         }).catch((err) => {
                             Logger.error(`Error fetching channel ${message.channel_id}: ${err}`);

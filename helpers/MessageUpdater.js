@@ -13,11 +13,15 @@ module.exports = {
                 LIMIT 550`)
                 .all().forEach((message) => {
                     setTimeout(() => {
-                        BOT.users.fetch(message.channel_id).then((user) => {
-                            user.dmChannel.messages.fetch(message.id).then((msg) => {
-                                const embed = msg.embeds[0];
-                                embed.color = 'BLACK';
-                                embed.footer.text = `This item expired `;
+                        BOT.users.fetch(message.channel_id).then(async (user) => {
+                            const dmChannel = await user.createDM();
+
+                            dmChannel.messages.fetch(message.id).then((msg) => {
+                                let embed = msg.embeds[0].data;
+                                if (embed.title.includes('<:Expired:980862802946318386>')) return;
+                                
+                                embed.color = 0;
+                                embed.footer = { text: 'This item expired' };
                                 embed.title = `<:Expired:980862802946318386> ${embed.title}`;
 
                                 msg.edit({ embeds: [embed] })

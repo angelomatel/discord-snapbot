@@ -92,6 +92,35 @@ const EnchantKeywords = {
     'CurseRes': 'Curse Res',
 }
 
+const createEmbed = (item, description) => {
+    const embed = new EmbedBuilder()
+        .setTitle(item.FullName)
+        .setDescription(description)
+        .setThumbnail(item.ImageUrl)
+        .setColor(getColor(item.Price))
+        .setTimestamp(item.EndTime * 1000)
+        .addFields(
+            {
+                name: 'Price',
+                value: `Ƶ ${item.Price.toLocaleString()}`,
+            },
+        )
+
+    if (item.Enchants) {
+        embed.addFields({
+            name: 'Enchant',
+            value: item.Enchants.map((e) => {
+                if (e.Enchant in EnchantKeywords) {
+                    return `${EnchantKeywords[e.Enchant]}${(e.Level) ? ` +${e.Level / 10}%` : ''}`;
+                } else {
+                    return `${e.Enchant} +${e.Level}`;
+                }
+            }).join('\n')
+        })
+    }
+    return embed;
+}
+
 module.exports = {
     /**
      * 
@@ -100,31 +129,13 @@ module.exports = {
      * @returns {MessageEmbed}
      * @description Creates an embed message for the item
      */
-    Create: function (item, guildName) {
-        const embed = new EmbedBuilder()
-            .setTitle(item.FullName)
-            .setDescription(`*Please keep this to ${guildName}*\nExpires <t:${item.EndTime}:R>`)
-            .setThumbnail(item.ImageUrl)
-            .setColor(getColor(item.Price))
-            .addFields(
-                {
-                    name: 'Price',
-                    value: `Ƶ ${item.Price.toLocaleString()}`,
-                },
-            )
+    Channel: function (item, guildName) {
+        const description = `*Please keep this to ${guildName}*\nExpires <t:${item.EndTime}:R>`;
+        return createEmbed(item, description);
+    },
 
-        if (item.Enchants) {
-            embed.addFields({
-                name: 'Enchant',
-                value: item.Enchants.map((e) => {
-                    if (e.Enchant in EnchantKeywords) {
-                        return `${EnchantKeywords[e.Enchant]}${(e.Level) ? ` +${e.Level / 10}%` : ''}`;
-                    } else {
-                        return `${e.Enchant} +${e.Level}`;
-                    }
-                }).join('\n')
-            })
-        }
-        return embed;
+    User: function (item, notifier) {
+        const description = `Your notifier ID \`${notifier.id}\` matches with this item! (${notifier.user_id})\nExpires <t:${item.EndTime}:R>`;
+        return createEmbed(item, description);
     }
 }

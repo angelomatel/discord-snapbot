@@ -8,7 +8,8 @@ module.exports = {
             db.prepare(`
                 SELECT *
                 FROM messages
-                WHERE unixepoch() > expiry
+                WHERE unixepoch() > expiry AND
+                channel_type = 'TextChannel'
                 LIMIT 800`)
                 .all().forEach((message) => {
                     setTimeout(() => {

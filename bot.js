@@ -13,7 +13,9 @@ const { connect, snapper } = require('./helpers/websocket');
 const Logger = require('./helpers/Logger');
 const db = require('./helpers/db');
 const SnapMessage = require('./helpers/SnapMessage');
+
 const MessageDeleter = require('./helpers/MessageDeleter');
+const MessageUpdater = require('./helpers/MessageUpdater');
 
 
 const ITEMS = require('./files/items.json');
@@ -34,7 +36,7 @@ for (const file of commandFiles) {
     if (command.data && command.execute) {
         // Register the commands globally
         BOT.commands.set(command.data.name, command);
-        Logger.info(`Loading command ${command.data.name}`);
+        // Logger.info(`Loading command ${command.data.name}`);
     } else {
         Logger.error(`Command ${file} is missing a required "data" or "execute" property.`);
     }
@@ -45,7 +47,7 @@ BOT.on('ready', async () => {
 
     // const user = await BOT.users.fetch('226720625329176576');
     // let embed = new EmbedBuilder({
-    //     title: `Test started ${new Date().toLocaleTimeString('en-US', {hour12: false})}`,
+    //     title: `(SEA) Snap Bot started ${new Date().toLocaleTimeString('en-US', {hour12: false})}`,
     //     color: 0xFF0000
     // })
     // user.send({embeds: [embed]});
@@ -53,6 +55,10 @@ BOT.on('ready', async () => {
 
     connect();
     MessageDeleter.start(BOT);
+    MessageUpdater.start(BOT);
+
+    // Set the bot's presence
+
 });
 
 BOT.on('interactionCreate', async (interaction) => {
@@ -81,6 +87,7 @@ snapper.on('item', async (item) => {
     // Remove the last 1 character from the item name
     const category = (item.Enchants) ? item.Enchants[3].Enchant.slice(0, -1) : 'None';
     const fourthEnchant = (item.Enchants) ? item.Enchants[3].Enchant : 'None';
+    const enchantLevel = (item.Enchants) ? item.Enchants[3].Enchant.slice(-1) : '-1'
     const itemObject = ITEMS[item.ItemId];
 
     let itemName = '';
@@ -113,12 +120,13 @@ snapper.on('item', async (item) => {
         WHERE channels.type = ? AND guilds.active = 1
     `).all(category);
 
+    // For subscribed guilds
     channels.forEach(async (c) => {
         const channelId = c.id;
         const channel = BOT.channels.cache.get(channelId);
 
         if (channel) {
-            const embed = SnapMessage.Create(item, c.guild_name);
+            const embed = SnapMessage.Channel(item, c.guild_name);
             channel.send({ embeds: [embed] }).then((message) => {
                 const messageId = message.id;
                 db.prepare(`
@@ -128,6 +136,35 @@ snapper.on('item', async (item) => {
             })
         } else {
             Logger.error(`[${c.guild_name}] Channel with ID ${channelId} not found`);
+        }
+    });
+
+    // For users with DM subscriptions
+    const users = db.prepare(`
+        SELECT notifier.user_id, notifier.id
+        FROM notifier
+        INNER JOIN guilds ON notifier.guild_id = guilds.id
+        WHERE guilds.active = 1 AND
+        notifier.item_id = ? AND
+        (notifier.refine = ? OR notifier.refine = -1) AND
+        (notifier.enchant = ? OR notifier.enchant = 'None') AND
+        (notifier.enchant_level = ? OR notifier.enchant_level = -1)
+    `).all(item.ItemId, item.RefineLevel, fourthEnchant, enchantLevel);
+
+    users.forEach(async (user) => {
+        const userId = user.user_id;
+        const userObj = await BOT.users.fetch(userId);
+        if (userObj) {
+            const embed = SnapMessage.User(item, user);
+            userObj.send({ embeds: [embed] }).then((message) => {
+                const messageId = message.id;
+                db.prepare(`
+                    INSERT INTO messages (id, channel_id, channel_type, order_id, expiry)
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(messageId, userId, 'DM', item.Orderid, item.EndTime);
+            })
+        } else {
+            Logger.error(`User with ID ${userId} not found`);
         }
     });
 

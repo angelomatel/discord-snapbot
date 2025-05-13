@@ -7,7 +7,7 @@ const Logger = require('../helpers/Logger');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('generate')
-        .setDescription('Create notifier channels for this server')
+        .setDescription('Admin Command: Create notifier channels for this or a specified server')
         .addStringOption(option =>
             option
                 .setName('guild_id')

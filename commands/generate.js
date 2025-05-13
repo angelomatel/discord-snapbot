@@ -7,7 +7,13 @@ const Logger = require('../helpers/Logger');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('generate')
-        .setDescription('Create notifier channels for this server'),
+        .setDescription('Create notifier channels for this server')
+        .addStringOption(option =>
+            option
+                .setName('guild_id')
+                .setDescription('The guild ID to activate')
+                .setRequired(false)
+        ),
 
     async execute(interaction) {
         if (!interaction.guild) {
@@ -42,8 +48,19 @@ module.exports = {
             None: 'uncommon-items',
         }
 
-        const guildId = interaction.guild.id;
-        const guildName = interaction.guild.name;
+        const guildId = interaction.options.getString('guild_id') || interaction.guild.id;
+        const guildName = interaction.client.guilds.cache.get(guildId)?.name || interaction.guild.name;
+
+        const guild = await interaction.client.guilds.fetch(guildId).catch(err => {
+            Logger.error(`Error fetching guild ${guildId}: ${err}`);
+        })
+
+        if (!guild) {
+            return interaction.reply({
+                content: `Guild with ID ${guildId} not found.`,
+                ephemeral: true
+            });
+        }
 
         const error = {
             isError: false,
@@ -60,7 +77,7 @@ module.exports = {
          */
         const createChannel = (channelname, type, categoryid) => {
             return new Promise((resolve, reject) => {
-                interaction.guild.channels.create({
+                guild.channels.create({
                     name: channelname,
                     type: ChannelType.GuildText,
                     parent: categoryid
@@ -100,7 +117,7 @@ module.exports = {
         }
 
         // Check if the channels already exist in the server
-        const existingChannels = interaction.guild.channels.cache.filter((channel) => {
+        const existingChannels = guild.channels.cache.filter((channel) => {
             return channel.type === ChannelType.GuildText && channel.parentId === null;
         });
 
@@ -115,12 +132,12 @@ module.exports = {
         }
 
         // Create the channels if they do not exist
-        const category = await interaction.guild.channels.create({
+        const category = await guild.channels.create({
             name: '💸 Snap Channels',
             type: ChannelType.GuildCategory,
             permissionOverwrites: [
                 {
-                    id: interaction.guild.id,
+                    id: guild.id,
                     deny: [PermissionsBitField.Flags.ViewChannel],
                 },
             ],

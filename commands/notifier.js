@@ -224,14 +224,14 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        // if (!interaction.guild) {
-        //     return interaction.reply({
-        //         content: 'This command can only be used in a server.',
-        //         ephemeral: true
-        //     });
-        // }
-
         const subcommand = interaction.options.getSubcommand();
+        if (!interaction.guild && ['add', 'category'].includes(subcommand)) {
+            return interaction.reply({
+                content: 'This command can only be used in a server.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const itemName = interaction.options.getString('item');
         const notifierId = interaction.options.getString('id');
         const refineLevel = interaction.options.getString('refine') || '-1';

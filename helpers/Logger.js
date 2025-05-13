@@ -42,6 +42,17 @@ const Logger = Winston.createLogger({
                 })
             )
         }),
+        new Winston.transports.File({
+            filename: 'logs/bot-debug.log',
+            level: 'debug',
+            format: Winston.format.combine(
+                Winston.format.timestamp(),
+                Winston.format.simple(),
+                Winston.format.printf(({ timestamp, level, message }) => {
+                    return `${timestamp} ${level}: ${message}`;
+                })
+            )
+        }),
     ]
 });
 
@@ -69,6 +80,9 @@ module.exports = {
     },
     warn: (message) => {
         Logger.warn(message);
+    },
+    debug: (message) => {
+        Logger.debug(message);
     },
     item: item,
 };

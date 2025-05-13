@@ -4,13 +4,13 @@ const path = require('node:path');
 
 const clientId = '703308998853656637';
 
-const commands = [];
+const commandsToAdd = [];
 const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     if ('data' in command && 'execute' in command) {
         // Register the commands globally
-        commands.push(command.data.toJSON());
+        commandsToAdd.push(command.data.toJSON());
         console.log(`Loading command ${command.data.name}`);
     } else {
         console.log(`Command ${file} is missing a required "data" or "execute" property.`);
@@ -24,11 +24,22 @@ const rest = new REST().setToken(process.env.BIG_CATMAN);
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
+        const commands = await rest.get(
+            Routes.applicationCommands(clientId),
+        ); // Get the current set of commands
+
+        // Remove current commands
+        for (const command of commands) {
+            await rest.delete(
+                Routes.applicationCommand(clientId, command.id),
+            );
+            console.log(`Deleted command ${command.name}`);
+        }
 
         // The put method is used to fully refresh all commands in the guild with the current set
         const data = await rest.put(
             Routes.applicationCommands(clientId),
-            { body: commands },
+            { body: commandsToAdd },
         );
 
         console.log(`Successfully reloaded ${data.length} application (/) commands.`);

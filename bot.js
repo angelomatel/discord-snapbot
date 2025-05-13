@@ -96,6 +96,7 @@ snapper.on('item', async (item) => {
     const fourthEnchant = (item.Enchants) ? item.Enchants[3].Enchant : 'None';
     const enchantLevel = (item.Enchants) ? item.Enchants[3].Enchant.slice(-1) : '-1'
     const itemObject = ITEMS[item.ItemId];
+    const itemType = itemObject.Type;
 
     let itemName = '';
         itemName += (item.Broken) ? '<:Broken:980862802803720242> ' : '';
@@ -152,11 +153,38 @@ snapper.on('item', async (item) => {
         FROM notifier
         INNER JOIN guilds ON notifier.guild_id = guilds.id
         WHERE guilds.active = 1 AND
-        notifier.item_id = ? AND
+        notifier.item_id = ? OR notifier.item_id = 0 AND
         (notifier.refine = ? OR notifier.refine = -1) AND
         (notifier.enchant = ? OR notifier.enchant = 'None') AND
-        (notifier.enchant_level = ? OR notifier.enchant_level = -1)
-    `).all(item.ItemId, item.RefineLevel, fourthEnchant, enchantLevel);
+        (notifier.enchant_level = ? OR notifier.enchant_level = -1) AND
+        (
+            notifier.category_id LIKE '%-%' AND
+            CAST(SUBSTR(notifier.category_id, 1, INSTR(notifier.category_id, '-') - 1) AS INTEGER) <= CAST(? AS INTEGER) AND
+            CAST(SUBSTR(notifier.category_id, INSTR(notifier.category_id, '-') + 1) AS INTEGER) >= CAST(? AS INTEGER)
+        ) OR (
+            notifier.category_id NOT LIKE '%-%' AND
+            CAST(notifier.category_id AS INTEGER) = CAST(? AS INTEGER)
+        )
+    `).all(item.ItemId, item.RefineLevel, category, enchantLevel, itemType, itemType, itemType);
+
+    // Logger.debug(`
+    //     SELECT notifier.user_id, notifier.id
+    //     FROM notifier
+    //     INNER JOIN guilds ON notifier.guild_id = guilds.id
+    //     WHERE guilds.active = 1 AND
+    //     notifier.item_id = '${item.ItemId}' OR notifier.item_id = 0 AND
+    //     (notifier.refine = '${item.RefineLevel}' OR notifier.refine = -1) AND
+    //     (notifier.enchant = '${category}' OR notifier.enchant = 'None') AND
+    //     (notifier.enchant_level = '${enchantLevel}' OR notifier.enchant_level = -1) AND
+    //     (
+    //         notifier.category_id LIKE '%-%' AND
+    //         CAST(SUBSTR(notifier.category_id, 1, INSTR(notifier.category_id, '-') - 1) AS INTEGER) <= CAST('${itemType}' AS INTEGER) AND
+    //         CAST(SUBSTR(notifier.category_id, INSTR(notifier.category_id, '-') + 1) AS INTEGER) >= CAST('${itemType}' AS INTEGER)
+    //     ) OR (
+    //         notifier.category_id NOT LIKE '%-%' AND
+    //         CAST(notifier.category_id AS INTEGER) = CAST('${itemType}' AS INTEGER)
+    //     )
+    // `)
 
     users.forEach(async (user) => {
         const userId = user.user_id;
